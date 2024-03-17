@@ -25,6 +25,8 @@
 *  SOFTWARE.
  */
 
+#include "utils/ColorRgb.h"
+#include <qvariant.h>
 #ifndef PCH_ENABLED
 	#include <QTimer>
 	#include <QThread>	
@@ -159,10 +161,12 @@ void Smoothing::handleSettingsUpdate(settings::type type, const QJsonDocument& c
 
         SmoothingConfig* cfg = _configurations[0].get();
 
-		if (obj["type"].toString("linear") == "alternative")
-			cfg->type = SmoothingType::Alternative;
-		else
+		if (obj["type"].toString("linear") == "linear")
 			cfg->type = SmoothingType::Linear;
+		else if (obj["type"].toString("linear") == "alternative")
+			cfg->type = SmoothingType::Alternative;
+		else if (obj["type"].toString("linear") == "exponentialmovingaverage")
+			cfg->type = SmoothingType::ExponentialMovingAverage;
 
 		cfg->antiFlickeringTreshold = obj["lowLightAntiFlickeringTreshold"].toInt(0);
 		cfg->antiFlickeringStep = obj["lowLightAntiFlickeringValue"].toInt(0);
@@ -223,6 +227,23 @@ void Smoothing::antiflickering(std::vector<ColorRgb>& newTarget)
 	}
 }
 
+void Smoothing::exponentialMovingAverage(std::vector<ColorRgb>& newTarget)
+{
+	if (_antiFlickeringTreshold > 0 && _antiFlickeringStep > 0)
+	{
+		for (size_t i = 0; i < _targetColorsUnsafe.size(); ++i)
+		{
+			ColorRgb& newColor = newTarget[i];
+			const ColorRgb& oldColor = _targetColorsUnsafe[i];
+			double& alpha = _alpha;
+
+			newColor.red = (alpha * oldColor.red) + (1 - alpha) * newColor.red;
+			newColor.green = (alpha * oldColor.green) + (1 - alpha) * newColor.green;
+			newColor.blue = (alpha * oldColor.blue) + (1 - alpha) * newColor.blue;
+		}
+	}
+}
+
 void Smoothing::UpdateLedValues(const std::vector<ColorRgb>& ledValues)
 {
 	if (!_enabled)
@@ -245,8 +266,14 @@ void Smoothing::UpdateLedValues(const std::vector<ColorRgb>& ledValues)
 	
 	try
 	{
-		if (_infoInput)
-			Info(_log, "Using %s smoothing input (%i)", ((_smoothingType == SmoothingType::Alternative) ? "alternative" : "linear"), _currentConfigId);
+		if (_infoInput) {
+			if (_smoothingType == SmoothingType::Linear)
+				Info(_log, "Using %s smoothing input (%i)", "linear", _currentConfigId);
+			else if (_smoothingType == SmoothingType::Alternative)
+				Info(_log, "Using %s smoothing input (%i)", "alternative", _currentConfigId);
+			else if (_smoothingType == SmoothingType::ExponentialMovingAverage)
+				Info(_log, "Using %s smoothing input (%i)", "exponentialmovingaverage", _currentConfigId);
+		}
 
 		_infoInput = false;
 		linearSetup(ledValues);
@@ -335,6 +362,14 @@ void Smoothing::updateLeds()
 			_currentColors = _targetColorsCopy;			
 		}		
 		else if (_smoothingType == SmoothingType::Alternative)
+		{
+			if (_infoUpdate)
+				Info(_log, "Using alternative smoothing procedure (%i)", _currentConfigId);
+			_infoUpdate = false;
+
+			linearSmoothingProcessing(true);
+		}
+		else if (_smoothingType == SmoothingType::ExponentialMovingAverage)
 		{
 			if (_infoUpdate)
 				Info(_log, "Using alternative smoothing procedure (%i)", _currentConfigId);
@@ -506,7 +541,7 @@ bool Smoothing::isEnabled() const
 
 Smoothing::SmoothingConfig::SmoothingConfig(bool __pause, int64_t __settlingTime, int64_t __updateInterval,
             bool __directMode, SmoothingType __type, int __antiFlickeringTreshold, int __antiFlickeringStep,
-            int64_t __antiFlickeringTimeout) :
+            int64_t __antiFlickeringTimeout, double __alpha) :
 	pause(__pause),
 	settlingTime(__settlingTime),
 	updateInterval(__updateInterval),
@@ -514,7 +549,13 @@ Smoothing::SmoothingConfig::SmoothingConfig(bool __pause, int64_t __settlingTime
 	type(__type),
 	antiFlickeringTreshold(__antiFlickeringTreshold),
 	antiFlickeringStep(__antiFlickeringStep),
-	antiFlickeringTimeout(__antiFlickeringTimeout)
+	antiFlickeringTimeout(__antiFlickeringTimeout),
+	alpha(__alpha)
+{
+}
+
+Smoothing::SmoothingConfig::SmoothingConfig(double __alpha) :
+	alpha(__alpha)
 {
 }
 

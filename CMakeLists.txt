@@ -4,6 +4,9 @@ message( STATUS "CMake Version: ${CMAKE_VERSION}" )
 
 PROJECT(HyperHdr)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD 20)
+
 # Parse semantic version of version file
 include (${CMAKE_CURRENT_SOURCE_DIR}/cmake/version.cmake)
 file (STRINGS "version" HYPERHDR_VERSION)

@@ -38,7 +38,6 @@ public slots:
 	void handleSettingsUpdate(settings::type type, const QJsonDocument& config);	
 
 private slots:
-
 	void updateLeds();
 	void componentStateChange(hyperhdr::Components component, bool state);
 
@@ -52,10 +51,14 @@ private:
 
 	unsigned addConfig(int settlingTime_ms, double ledUpdateFrequency_hz = 25.0, bool directMode = false);
 	uint8_t clamp(int x);
-	void antiflickering(std::vector<ColorRgb>& newTarget);
+
 	void linearSetup(const std::vector<ColorRgb>& ledValues);
 	void linearSmoothingProcessing(bool correction);
 	void debugOutput(std::vector<ColorRgb>& _targetValues);
+
+	/* Smoothing filter types */
+	void antiflickering(std::vector<ColorRgb>& newTarget);
+	void exponentialMovingAverage(std::vector<ColorRgb>& newTarget);
 
 	Logger* _log;
 	HyperHdrInstance* _hyperhdr;
@@ -67,6 +70,7 @@ private:
 	std::vector<ColorRgb> _targetColorsCopy;
 	std::vector<ColorRgb> _currentColors;
 	std::vector<int64_t>  _currentTimeouts;
+	double _alpha;
 
 
 	bool _continuousOutput;
@@ -79,7 +83,7 @@ private:
 	int64_t _previousTime;
 	bool _pause;
 
-	enum class SmoothingType { Linear = 0, Alternative = 1 };
+	enum class SmoothingType { Linear = 0, Alternative = 1, ExponentialMovingAverage = 2};
 
 	struct SmoothingConfig
 	{
@@ -91,10 +95,11 @@ private:
 		int			  antiFlickeringTreshold;
 		int			  antiFlickeringStep;
 		int64_t		  antiFlickeringTimeout;
+		double alpha;
 
         SmoothingConfig(bool __pause, int64_t __settlingTime, int64_t __updateInterval, bool __directMode,
             SmoothingType __type = SmoothingType::Linear, int __antiFlickeringTreshold = 0, int __antiFlickeringStep = 0,
-            int64_t __antiFlickeringTimeout = 0);
+            int64_t __antiFlickeringTimeout = 0, double _alpha = 0.1);
 
 		static QString EnumToString(SmoothingType type);
 	};

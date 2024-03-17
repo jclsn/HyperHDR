@@ -1,0 +1,16 @@
+{
+  "configurations": {
+    "Launch": {
+      "adapter": "CodeLLDB",
+      "filetypes": [ "cpp", "c", "objc", "rust" ],
+      "configuration": {
+        "request": "launch",
+        "program": "./build/bin/hyperhdr",
+        "args": [],
+        "cwd": "${workspaceRoot}",
+        "environment": [],
+        "externalConsole": true
+      }
+    }
+  }
+}

@@ -16,10 +16,18 @@
 		{
 			"type" : "string",
 			"title" : "edt_conf_smooth_type_title",
-			"enum" : ["linear", "alternative"],
+			"enum" : [
+				"linear",
+				"alternative",
+				"exponentialmovingaverage"
+			],
 			"default" : "alternative",
 			"options" : {
-				"enum_titles" : ["edt_conf_enum_linear", "edt_conf_enum_linear_alternative"]
+				"enum_titles": [
+					"edt_conf_enum_linear",
+					"edt_conf_enum_linear_alternative",
+					"edt_conf_enum_exponential_moving_average"
+				]
 			},
 			"required" : true,
 			"propertyOrder" : 2
@@ -105,7 +113,21 @@
 			"default" : false,
 			"required" : true,
 			"propertyOrder" : 10
+		},
+		"alpha" :
+		{
+			"type" : "number",
+			"format": "stepper",			
+			"step" : 0.0001,			
+			"title" : "edt_conf_smooth_alpha_title",
+			"minimum" : 0.001,
+			"maximum" : 0.9,
+			"default" : 0.1,
+			"append" : "",
+			"required" : true,
+			"propertyOrder" : 4
 		}
+
 	},
 	"additionalProperties" : false
 }
